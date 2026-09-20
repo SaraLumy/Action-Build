@@ -732,31 +732,7 @@ jobs:
           echo "::group::最终 Makefile 中版本信息及部分调试结果预览"
           grep -nE '^(REPO_OWNER|REPO_NAME|REPO_BRANCH|KSU_VERSION_API|KSU_VERSION_FULL|VERSION_TAG|GIT_BIN|CURL_BIN)' kernel/Makefile
           echo "::endgroup::"
-          
-      - name: Fix sulog USER_ARG_NULL
-        run: |
-          cd kernel_workspace/kernel_platform/common
-          SULOG_EVENT="./drivers/kernelsu/sulog/event.c"
-          if [ ! -f "$SULOG_EVENT" ]; then
-            echo "未找到 $SULOG_EVENT，跳过"
-            exit 0
-          fi
-
-          # 情况1：函数要指针 → 必须不带 &
-          if grep -q 'struct user_arg_ptr \*argv_user' "$SULOG_EVENT"; then
-            sed -i 's|, &USER_ARG_NULL, gfp)|, USER_ARG_NULL, gfp)|g' "$SULOG_EVENT"
-            echo "✅ 已修复：指针版签名，去掉 &"
-          # 情况2：函数要值 → 必须带 &
-          elif grep -q 'const struct user_arg_ptr argv,' "$SULOG_EVENT"; then
-            sed -i 's|, USER_ARG_NULL, gfp)|, \&USER_ARG_NULL, gfp)|g' "$SULOG_EVENT"
-            sed -i 's|, &USER_ARG_NULL, gfp)|, \&USER_ARG_NULL, gfp)|g' "$SULOG_EVENT"
-            echo "✅ 已修复：值版签名，补上 &"
-          else
-            echo "⚠️ 未识别的签名，跳过"
-          fi
-
-          # 打印结果，方便在日志里核对
-          grep -n 'USER_ARG_NULL' "$SULOG_EVENT"     
+            
       - name: Apply Fake Patches
         if: ${{ github.event.inputs.SUSFS_META != '-1' }}
         run: |
