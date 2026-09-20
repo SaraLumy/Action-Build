@@ -733,6 +733,17 @@ jobs:
           grep -nE '^(REPO_OWNER|REPO_NAME|REPO_BRANCH|KSU_VERSION_API|KSU_VERSION_FULL|VERSION_TAG|GIT_BIN|CURL_BIN)' kernel/Makefile
           echo "::endgroup::"
 
+      - name: Fix sulog USER_ARG_NULL
+        run: |
+          cd kernel_workspace/kernel_platform/common
+          SULOG_EVENT="./drivers/kernelsu/sulog/event.c"
+          if [ -f "$SULOG_EVENT" ] && grep -q ', USER_ARG_NULL, gfp)' "$SULOG_EVENT"; then
+            sed -i 's|, USER_ARG_NULL, gfp)|, \&USER_ARG_NULL, gfp)|g' "$SULOG_EVENT"
+            echo "已修复 sulog USER_ARG_NULL 参数类型"
+          else
+            echo "无需修复或文件不存在"
+          fi
+          
       - name: Apply Fake Patches
         if: ${{ github.event.inputs.SUSFS_META != '-1' }}
         run: |
